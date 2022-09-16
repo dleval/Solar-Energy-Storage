@@ -62,13 +62,10 @@ void setup() {
 }
 
 void loop() {
-  envoy.process();
-
-  static uint32_t last_time;
   int16_t envoy_meas;
-  if ((millis() - last_time) > 5000)
+  
+  if (envoy.process())
   {
-    last_time = millis();
     if(envoy.get_production_power(&envoy_meas)) {
       Serial.print(F("Solar production : "));
       Serial.print(envoy_meas);

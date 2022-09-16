@@ -34,7 +34,7 @@ public:
     Enphase_Envoy();
     ~Enphase_Envoy();
     void begin(uint32_t interval);
-    int8_t process(void);
+    bool process(void);
     bool get_production_power(int16_t *prod);
     bool get_consumption_power(int16_t *cons);
     void set_request_interval(uint32_t interval);

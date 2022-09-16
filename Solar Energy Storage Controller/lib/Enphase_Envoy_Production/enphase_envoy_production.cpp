@@ -54,10 +54,11 @@ void Enphase_Envoy::begin(uint32_t interval)
     set_request_interval(interval);
 }
 
-int8_t Enphase_Envoy::process(void)
+bool Enphase_Envoy::process(void)
 {
     enum{SEND_REQUEST, SKIP_HEADER, READ_RESPONSE, WAIT_CYCLE};
     static uint8_t state = SEND_REQUEST;
+    bool ret = false;
 
     switch(state)
     {
@@ -77,6 +78,12 @@ int8_t Enphase_Envoy::process(void)
             break;
         case SKIP_HEADER:
             if(skipResponseHeaders()) state = READ_RESPONSE;
+            else
+            {
+                com_status = false;
+                disconnect();
+                state = WAIT_CYCLE;
+            }
             break;
         case READ_RESPONSE:
             // if (eth_client.available()) {
@@ -99,6 +106,7 @@ int8_t Enphase_Envoy::process(void)
                 solar_prod = (int16_t)json_doc["production"][1]["wNow"];
                 grid_cons = (int16_t)json_doc["consumption"][0]["wNow"];
                 com_status = true;
+                ret = true;
             }
             disconnect();
             state = WAIT_CYCLE;
@@ -110,7 +118,7 @@ int8_t Enphase_Envoy::process(void)
         default:
             state = WAIT_CYCLE;
     }
-    return 0;
+    return ret;
 }
 
 bool Enphase_Envoy::get_production_power(int16_t *prod)
