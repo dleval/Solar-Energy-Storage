@@ -15,11 +15,13 @@
 
 /* Debug Macro **********************************************************************************/
 #if _DEBUG_ENVOY_ENABLE != 0
-#define _DEBUG_PRINT(x)     Serial.print(x)
-#define _DEBUG_PRINTLN(x)   Serial.println(x)
+#define _DEBUG_PRINT(x)         Serial.print(x)
+#define _DEBUG_PRINTLN(x)       Serial.println(x)
+#define _DEBUG_JSON_PRETTY(x)   serializeJsonPretty(x, Serial)
 #else
 #define _DEBUG_PRINT(x)     
 #define _DEBUG_PRINTLN(x)   
+#define _DEBUG_JSON_PRETTY(x)
 #endif
 
 /* External object ******************************************************************************/
@@ -56,7 +58,7 @@ void Enphase_Envoy::begin(uint32_t interval)
 
 bool Enphase_Envoy::process(void)
 {
-    enum{SEND_REQUEST, SKIP_HEADER, READ_RESPONSE, WAIT_CYCLE};
+    enum{SEND_REQUEST, SKIP_HEADER, READ_RESPONSE, WAIT_CYCLE, ERROR_STATE};
     static uint8_t state = SEND_REQUEST;
     bool ret = false;
 
@@ -69,42 +71,25 @@ bool Enphase_Envoy::process(void)
                 sendRequest(server, resource);
                 state = SKIP_HEADER;
             }
-            else 
-            {
-                com_status = false;
-                disconnect();
-                state = WAIT_CYCLE;
-            }
+            else state = ERROR_STATE;
             break;
         case SKIP_HEADER:
             if(skipResponseHeaders()) state = READ_RESPONSE;
-            else
-            {
-                com_status = false;
-                disconnect();
-                state = WAIT_CYCLE;
-            }
+            else state = ERROR_STATE;
             break;
         case READ_RESPONSE:
-            // if (eth_client.available()) {
-            //     char c = eth_client.read();
-            //     Serial.write(c);
-            // }
             error = deserializeJson(json_doc, eth_client);
             _DEBUG_PRINT(F("Envoy : perf.:"));
             _DEBUG_PRINTLN(millis() - last_connect_time);
             if (error) {
-                com_status = false;
                 _DEBUG_PRINT(F("Envoy : deserializeJson() failed: "));
                 _DEBUG_PRINTLN(error.f_str());
+                state = ERROR_STATE;
             }
             else {
                 _DEBUG_PRINTLN(F("Envoy : Response:"));
-                #if _DEBUG_ENVOY_ENABLE != 0
-                serializeJsonPretty(json_doc, Serial);
-                #endif
-                solar_prod = (int16_t)json_doc["production"][1]["wNow"];
-                grid_cons = (int16_t)json_doc["consumption"][0]["wNow"];
+                _DEBUG_JSON_PRETTY(json_doc);
+                json_extract_data();
                 com_status = true;
                 ret = true;
             }
@@ -113,6 +98,13 @@ bool Enphase_Envoy::process(void)
             
         case WAIT_CYCLE:
             if (millis() - last_connect_time > request_interval_time) state = SEND_REQUEST;
+            break;
+
+        case ERROR_STATE:
+            _DEBUG_PRINTLN(F("Envoy : Error"));
+            com_status = false;
+            disconnect();
+            state = WAIT_CYCLE;
             break;
 
         default:
@@ -189,5 +181,11 @@ bool Enphase_Envoy::skipResponseHeaders(void) {
   // end of size number
   eth_client.find('\n');
   return ok;
+}
+
+void Enphase_Envoy::json_extract_data(void)
+{
+    solar_prod = (int16_t)json_doc["production"][1]["wNow"];
+    grid_cons = (int16_t)json_doc["consumption"][0]["wNow"];
 }
 

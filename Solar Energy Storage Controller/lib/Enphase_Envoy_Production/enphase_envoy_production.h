@@ -29,6 +29,7 @@ private:
     void disconnect(void);
     void sendRequest(const char* host, const char* resource);
     bool skipResponseHeaders(void); 
+    void json_extract_data(void);
 
 public:
     Enphase_Envoy();
