@@ -23,6 +23,7 @@ flowchart LR;
    bat --- boost[Boost\nCurrent Limiter]
    boost --- inv[Micro-Inverter]
    inv --- ac_out((AC))
+   Controller --- eth((Ethernet))
 ```
 
 ### Main features
@@ -30,7 +31,8 @@ flowchart LR;
 - (main_002) Charge one or more batteries with the excess power production.
 - (main_003) Releases energy stored on the home grid when solar production is inactive.
 - (main_004) Maintain batteries in good condition to preserve their lifespan.
-- (main_005) Do not release more stored energy than necessary for home consumption
+- (main_005) Do not release more stored energy than necessary for home consumption.
+- (main_006) Data recovery and control via ModBus TCP server.
 
 ### Power management
 - (power_001) Retrieving data from Envoy gateway every second
@@ -118,7 +120,7 @@ Enphase IQ7+
 
 ### Controller
 
-Arduino MEGA
+Arduino MEGA + Ethernet Shield
 
 ## License
 
