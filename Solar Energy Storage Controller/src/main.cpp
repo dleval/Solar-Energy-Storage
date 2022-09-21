@@ -12,7 +12,10 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <Ethernet.h>
+#include <ArduinoRS485.h> 
 #include "enphase_envoy_production.h"
+#include "modbus_rtu_client.h"
+#include "modbus_tcp_server.h"
 
 // Enter a MAC address for your controller below.
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
@@ -23,7 +26,11 @@ IPAddress myDns(192, 168, 0, 1);
 // Initialize the Ethernet client library (port 80 is default for HTTP)
 EthernetClient eth_client;
 
+RS485Class rs485_modbus(Serial1, 18, 8, 9);
+
 Enphase_Envoy envoy;
+Modbus_RTU_Client MB_RTU_client;
+Modbus_TCP_Server MB_TCP_server;
 
 void setup_Ethernet(void)
 {
@@ -57,13 +64,17 @@ void setup() {
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
   setup_Ethernet();
-  envoy.begin(5000);
+  envoy.begin(2000);
+  MB_RTU_client.begin(38400);
+  MB_TCP_server.begin();
 }
 
 void loop() {
   int16_t envoy_meas;
-  
+
   if (envoy.process())
   {
     if(envoy.get_production_power(&envoy_meas)) {
@@ -76,6 +87,14 @@ void loop() {
       Serial.print(envoy_meas);
       Serial.println(F(" W"));
     } else Serial.println(F("Grid consumption not avail."));
+  }
+
+  MB_TCP_server.process();
+  uint16_t mb_register_data;
+  if(MB_TCP_server.access_register(0x01, &mb_register_data, Modbus_TCP_Server::READ))
+  {
+    if(mb_register_data) digitalWrite(LED_BUILTIN, HIGH);
+    else digitalWrite(LED_BUILTIN, LOW);
   }
  
 }
