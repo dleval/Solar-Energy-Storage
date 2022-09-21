@@ -73,10 +73,12 @@ bool Enphase_Envoy::process(void)
             }
             else state = ERROR_STATE;
             break;
+
         case SKIP_HEADER:
             if(skipResponseHeaders()) state = READ_RESPONSE;
             else state = ERROR_STATE;
             break;
+
         case READ_RESPONSE:
             error = deserializeJson(json_doc, eth_client);
             _DEBUG_PRINT(F("Envoy : perf.:"));
@@ -144,17 +146,17 @@ void Enphase_Envoy::set_request_interval(uint32_t interval)
 
 // Open connection to the HTTP server
 bool Enphase_Envoy::connect(const char* hostName) {
-  _DEBUG_PRINT(F("Envoy : Connect to "));
-  _DEBUG_PRINTLN(hostName);
-  bool ok = eth_client.connect(hostName, 80);
+    _DEBUG_PRINT(F("Envoy : Connect to "));
+    _DEBUG_PRINTLN(hostName);
+    bool ok = eth_client.connect(hostName, 80);
 //   _DEBUG_PRINTLN(ok ? "Connected" : "Connection Failed!");
-  return ok;
+    return ok;
 }
 
 // Close the connection with the HTTP server
 void Enphase_Envoy::disconnect(void) {
-  _DEBUG_PRINTLN(F("Envoy : Disconnect"));
-  eth_client.stop();
+    _DEBUG_PRINTLN(F("Envoy : Disconnect"));
+    eth_client.stop();
 }
 
 // Send the HTTP GET request to the server
@@ -171,16 +173,16 @@ void Enphase_Envoy::sendRequest(const char* host, const char* resource) {
 
 // Skip HTTP headers so that we are at the beginning of the response's body
 bool Enphase_Envoy::skipResponseHeaders(void) {
-  // HTTP headers end with an empty line
-  char endOfHeaders[] = "\r\n\r\n";
-  eth_client.setTimeout(HTTP_TIMEOUT);
-  bool ok = eth_client.find(endOfHeaders);
-  if (!ok) {
-    _DEBUG_PRINTLN(F("Envoy : No response or invalid response!"));
-  }
-  // end of size number
-  eth_client.find('\n');
-  return ok;
+    // HTTP headers end with an empty line
+    char endOfHeaders[] = "\r\n\r\n";
+    eth_client.setTimeout(HTTP_TIMEOUT);
+    bool ok = eth_client.find(endOfHeaders);
+    if (!ok) {
+        _DEBUG_PRINTLN(F("Envoy : No response or invalid response!"));
+    }
+    // end of size number
+    eth_client.find('\n');
+    return ok;
 }
 
 void Enphase_Envoy::json_extract_data(void)
